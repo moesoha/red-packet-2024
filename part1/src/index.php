@@ -85,7 +85,7 @@ include_once './news.inc.php';
 						</marquee>
 						<h3 style="text-align: left; margin-bottom: 0;">新闻</h3>
 						<ol style="text-align: left; margin: 0; font-size: .875em;">
-							<?php foreach(NEWS as $id => $data): if($data['hidden'] ?? false) continue; ?>
+							<?php foreach(NEWS as $id => $data): if(($data['hidden'] ?? false) || ($data['internal'] ?? false)) continue; ?>
 							<li><a href="news.php?id=<?php echo $id; ?>"><?php echo $data['title']; ?></a></li>
 							<?php endforeach; ?>
 						</ol>
