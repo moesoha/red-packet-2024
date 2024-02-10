@@ -7,9 +7,9 @@ if(empty($news)) {
 	echo '<div style="text-align: center;"><h1>404 Not Found</h1><hr><small>SohaHongbao/2.024</small></div>';
 	exit(0);
 }
-if($news['internal'] ?? false) {
+if(($news['internal'] ?? false) && (($_SERVER['HTTP_HOST'] ?? '') !== INTERNAL_HOST)) {
 	http_response_code(302);
-	$url = INTERNAL_BASEURL.$_SERVER['REQUEST_URI'];
+	$url = 'https://'.INTERNAL_HOST.$_SERVER['REQUEST_URI'];
 	header("Location: $url");
 	echo '<a href="'.htmlspecialchars($url).'">点此重定向到内网查阅。</a>';
 	exit(0);

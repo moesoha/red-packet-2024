@@ -2,7 +2,7 @@
 // phpinfo();
 header('Content-Type: text/html; charset=utf-8');
 
-define('INTERNAL_BASEURL', 'https://loongbao24.hb.lohu.info:81');
+define('INTERNAL_HOST', 'loongbao24.hb.lohu.info:81');
 
 define('NEWS', [
 	114520 => [
