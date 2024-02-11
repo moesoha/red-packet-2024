@@ -56,7 +56,11 @@ impl Decoder for Telnet {
 		while let Some(n) = src.iter().position(|&b| b == ESCAPE) {
 			let next = match src.get(n + 1).map(|&x| TelnetCommand::try_from(x).ok()) {
 				Some(Some(b)) => b,
-				Some(None) => continue,
+				Some(None) => {
+					buf.extend_from_slice(&src[..n]);
+					src.advance(n + 2);
+					continue;
+				},
 				None => return Ok(None)
 			};
 			match next {
