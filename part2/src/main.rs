@@ -27,6 +27,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             let tag: &str = tag.as_str();
 
             let mut transport = new_telnet_stream(stream);
+            // Windows will not send negotiation unless receive some, send one to trigger
+            transport.send(TelnetData::Will(true, TelnetOption::Echo)).await.ok();
             tokio::time::sleep(Duration::from_millis(666)).await;
 
             let mut option_neg_sent = false;
