@@ -13,12 +13,12 @@ define('NEWS', [
 		// ],
 		'title' => '【内部】为留校职工发放龙年春节红包的通知',
 		'content' => <<<EOF
-<p>找到这个页面的大佬：</p>
-<p>恭喜你获得本次新年红包之一！请使用 TODOTODO 作为口令领取红包吧！ </p>
+<p>找到这个页面的办网专家：</p>
+<p>恭喜你获得本次新年红包之一！请使用 92391909 作为口令领取红包吧！ </p>
 <p style="text-align: right;">
 	foobar 院新年红包研究所
 	<br />
-	2024 年 2 月 9 日
+	2024 年 2 月 11 日
 </p>
 EOF
 	],
@@ -123,16 +123,27 @@ EOF
 		'title' => '【内部】关于研究所试用下一代VPN服务的通知',
 		'content' => <<<EOF
 <p>各位同志：</p>
-<p>根据有关精神，我院正在试点基于 SRv6 的 VPN 业务，欢迎体验。由于目前该技术的 VPN 尚属于试用阶段，且 SRv6 VPN 需要用户终端有 IPv6 地址，应用范围尚不够广泛，因此我中心仅提供 Linux 支持。若想试用请跟从以下指示完成：</p>
+<p>根据有关精神，我院正在试点基于 SRv6 的 VPN 业务，欢迎体验。由于目前该技术的 VPN 尚属于试用阶段，且 SRv6 VPN 需要用户终端有路由至机器的 IPv6 地址（院内网络符合此条件），应用范围尚不够广泛，因此我中心仅提供 Linux 支持（网关目前也使用 Linux 部署）。若想试用请跟从以下指示完成：</p>
 <ol>
-	<li>在 OA 系统 VPN 区进入“SRv6 测试”分区，记录下系统分配的 HMAC Key ID、HMAC Key、IP 地址等信息，这些信息都是下面尖括号中需要填写的内容。</li>
-	<li>查看本地机器的 IPv6 地址，在“SRv6 对端”中填入并保存。目前需要手动更新本地地址，后续将提供自动更新功能。</li>
-	<li>使用 <code>sysctl -w net.ipv6.conf.&lt;本地出口网卡名&gt;.seg6_enabled=1</code> 开启本地的 SRv6 功能。</li>
-	<li>使用 <code>sysctl -w net.ipv6.conf.&lt;本地出口网卡名&gt;.seg6_require_hmac=1</code> 开启 SRv6 的报文校验功能。</li>
-	<li>使用 <code>ip sr hmac set &lt;HMAC Key ID&gt; sha1</code>，并在后面提示输入密码时填入系统分配的 HMAC Key。</li>
-	<li>使用 <code>ip -4 route add 172.20.24.0/24 src &lt;IP 地址&gt; mtu 1280 encap seg6 mode encap segs 2402:4e00:1801:ef0c::fbac:2024 hmac &lt;HMAC Key ID&gt; dev &lt;本地出口网卡名&gt;</code> 开通到院内的路由，即可直接访问院内资源了。</li>
+	<li>在 OA 系统 VPN 区进入“SRv6 测试”分区，记录下系统分配的 HMAC Key ID、HMAC Key、网关地址、IP 地址等信息，这些信息都是下面尖括号中需要填写的内容。</li>
+	<li>取 1 个路由到本地机器的 IPv6 地址，在“SRv6 对端”中填入并保存，这个地址将用作解封装入向 SRv6 报文，下面用 <code>&lt;路由至本地的 IP&gt;</code> 表示这个地址。</li>
+	<li>使用 <code>sysctl -w net.ipv6.conf.all.forwarding=1</code> 开启本机的 IPv6 转发能力。</li>
+	<li>使用 <code>ip netns add fbvpn</code> 创建用于处理 SRv6 入向报文的 netns。</li>
+	<li>使用 <code>ip netns exec fbvpn sysctl -w net.ipv6.conf.all.seg6_enabled=1 net.ipv6.conf.all.seg6_require_hmac=1 net.ipv6.conf.all.forwarding=1</code> 开启 netns 中的 SRv6 处理能力和转发能力。</li>
+	<li>使用 <code>ip link add fbvpn type veth peer name fbvpn-main && ip link set dev fbvpn up</code> 创建连接到 netns 中的网线。</li>
+	<li>使用 <code>ip link set dev fbvpn-main netns fbvpn && ip -n fbvpn link set dev fbvpn-main up</code> 将网线的另一端移入 netns。</li>
+	<li>使用 <code>ip addr add dev fbvpn fe80::1/64 ; ip -n fbvpn addr add dev fbvpn-main fe80::2/64</code> 设置网线两端的链路 IP。</li>
+	<li>使用 <code>ip -n fbvpn -6 route add dev fbvpn-main default via fe80::1 metric 10</code> 将 netns 中的默认路由指向外面。</li>
+	<li>使用 <code>ip -n fbvpn sr hmac set &lt;HMAC Key ID&gt; sha1</code> 在 netns 里面设置用于校验入向 SRv6 报文的 HMAC 密钥，在后面提示输入密码时填入系统分配的 HMAC Key。</li>
+	<li>使用 <code>ip sr hmac set &lt;HMAC Key ID&gt; sha1</code> 在 netns 里面设置用于签名出向 SRv6 报文的 HMAC 密钥，在后面提示输入密码时填入系统分配的 HMAC Key（和上面一样）。</li>
+	<li>使用 <code>ip addr add dev lo &lt;VPN IP 地址&gt;/128</code> 将系统分配的 VPN IP 绑定到本机。</li>
+	<li>使用 <code>ip route add dev fbvpn &lt;路由至本地的 IP&gt;/128 via fe80::2</code> 将 SRv6 解封装地址转发进 netns 处理。</li>
+	<li>使用 <code>ip -n fbvpn route add &lt;路由至本地的 IP&gt;/128 encap seg6local action End.DX6 nh6 :: dev fbvpn-main</code> 设置 SRv6 的解封装动作。</li>
+	<li>使用 <code>ip route add fd24:fbac::/32 src &lt;VPN IP 地址&gt; mtu 1280 encap seg6 mode encap segs &lt;网关地址&gt; hmac &lt;HMAC Key ID&gt; dev &lt;本地出口网卡名&gt;</code> 以正确的源地址 IP 开通本机到网关的路由，即可通过 SRv6 网关访问院内资源了。</li>
 </ol>
-<p>在试用过程中有任何问题欢迎联系信息技术中心咨询。</p>
+<p>配置成功后效果应当如下图所示：</p>
+<p style="text-align: center;"><img src="srv6.png" style="max-width: 95%;" /></p>
+<p>该功能尚处于测试阶段，网关一端的配置难免会有失误、错漏，在试用过程中有任何问题欢迎联系信息技术中心咨询。</p>
 <p style="text-align: right;">
 	foobar 院新年红包研究所信息技术中心
 	<br />
