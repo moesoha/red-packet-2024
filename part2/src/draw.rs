@@ -69,6 +69,8 @@ lazy_static::lazy_static! {
 		a.as_bytes().to_vec()
 	};
 
+	pub static ref PROMPT_TIMEOUT: Vec<u8> = b"\r\n\r\n\r\nOperation Timeout. Disconnecting.\r\n\r\n".to_vec();
+
 	pub static ref PROMPT_OPENED: Vec<u8> = {
 		let a = vec![
 			"\x1b[22H\x1b[m",
