@@ -11,7 +11,7 @@ if(($news['internal'] ?? false) && (($_SERVER['HTTP_HOST'] ?? '') !== INTERNAL_H
 	http_response_code(302);
 	$url = 'https://'.INTERNAL_HOST.$_SERVER['REQUEST_URI'];
 	header("Location: $url");
-	echo '<a href="'.htmlspecialchars($url).'">点此重定向到内网查阅。</a>';
+	echo '<a href="'.htmlspecialchars($url).'">内部通知，点此重定向到内网可看的网站查阅。</a>';
 	exit(0);
 }
 // if(!empty($allowNet = $news['ip'] ?? [])) {
