@@ -106,7 +106,7 @@ include_once './news.inc.php';
 					</div>
 					<br/>
 					<div>
-						<button onclick="alert('系统维护中，暂不能登录。');">登录</button>
+						<button onclick="alert('系统维护中，暂不能登录。'/* 有没有一种可能，这真的只是个摆设 */);">登录</button>
 					</div>
 				</div>
 			</div>
