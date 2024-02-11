@@ -7,10 +7,12 @@ use tokio_util::codec::{Decoder, Encoder, Framed};
 
 pub type TelnetStream = Framed<TcpStream, Telnet>;
 pub fn new_telnet_stream(stream: TcpStream) -> TelnetStream {
-	Framed::new(stream, Telnet)
+	Framed::new(stream, Telnet { subnegotiation_started: false })
 }
 
-pub struct Telnet;
+pub struct Telnet {
+	subnegotiation_started: bool
+}
 impl Encoder<TelnetData> for Telnet {
 	type Error = io::Error;
 
@@ -72,7 +74,7 @@ impl Decoder for Telnet {
 				}
 			}
 			match next {
-				TelnetCommand::Escape|TelnetCommand::Nop|TelnetCommand::DataMark|TelnetCommand::SubnegotiationEnd => panic!("should not happen"),
+				TelnetCommand::Escape|TelnetCommand::Nop|TelnetCommand::DataMark => panic!("should not happen"),
 				c @ (
 					TelnetCommand::GoAhead|TelnetCommand::AreYouThere|
 					TelnetCommand::EraseLine|TelnetCommand::EraseCharacter|
@@ -95,8 +97,15 @@ impl Decoder for Telnet {
 						None
 					});
 				},
+				TelnetCommand::SubnegotiationEnd => {
+					self.subnegotiation_started = false;
+					src.advance(2);
+					return Ok(None);
+				}
 				TelnetCommand::Subnegotiation => {
-					let option = if let Some(o) = src.get(2).map(|&x| TelnetOption::from(x)) {
+					self.subnegotiation_started = true;
+					break;
+					/* let option = if let Some(o) = src.get(2).map(|&x| TelnetOption::from(x)) {
 						o
 					} else {
 						return Ok(None);
@@ -132,9 +141,13 @@ impl Decoder for Telnet {
 						}
 						TelnetSubnegotiationResponse::new(option, v)
 							.map(|r| Some(TelnetData::SubnegotiationResponse(r)))
-					});
+					});*/
 				}
 			}
+		}
+		if self.subnegotiation_started {
+			src.advance(src.len());
+			return Ok(None);
 		}
 		// rest are telnet data
 		let stop_len = stop_before.unwrap_or(src.len());
