@@ -28,7 +28,7 @@ lazy_static::lazy_static! {
 		a.as_bytes().to_vec()
 	};
 
-	pub static ref CODE_HONGBAO: Vec<u8> = b"84102755".to_vec();
+	pub static ref CODE_HONGBAO: Vec<u8> = b"51131748".to_vec();
 
 	pub static ref HONGBAO_EASTER_OPENED: Vec<u8> = {
 		let a = vec![
